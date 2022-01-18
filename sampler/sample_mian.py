@@ -44,7 +44,7 @@ if __name__ == '__main__':
     obs_space = (10, 10, 27)
     action_shape = [100, 6, 4, 4, 4, 4, 7, 49]
 
-    states = np.ones((num_steps, num_envs, ) + obs_space)
+    states = np.ones((num_steps, num_envs,) + obs_space)
     actions = np.ones((num_steps, num_envs, len(action_shape)))
     rewards = np.ones((num_steps, num_envs))
     values = np.ones((num_steps, num_envs))
@@ -56,15 +56,16 @@ if __name__ == '__main__':
     moba_agent = MobaAgent(moba_net, action_space=action_shape)
 
     for update in range(starting_update, num_updates + 1):
-        path = ''
-
+        path = '../train/moba_net.pt'
+        moba_agent.net.load_state_dict(torch.load(path, map_location=device))
         for step in range(0, num_steps):
             envs.render()
             states[step] = next_obs
             ds[step] = next_done
             unit_mask = np.array(envs.vec_client.getUnitLocationMasks()).reshape(num_envs, -1)
             with torch.no_grad():
-                action, log_prob, masks[step], values[step] = moba_agent.get_action(torch.Tensor(next_obs), unit_mask, envs)
+                action, log_prob, masks[step], values[step] = moba_agent.get_action(torch.Tensor(next_obs), unit_mask,
+                                                                                    envs)
                 actions[step] = action.T
                 log_probs[step] = log_prob
                 next_obs, rs, done, infos = envs.step(action.T)
