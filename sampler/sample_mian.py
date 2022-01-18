@@ -1,5 +1,6 @@
 import torch
 import numpy as np
+import os
 from gym_microrts.envs.vec_env import MicroRTSVecEnv
 from gym_microrts import microrts_ai
 from agent import MobaNet, MobaAgent
@@ -57,15 +58,15 @@ if __name__ == '__main__':
 
     for update in range(starting_update, num_updates + 1):
         path = '../train/moba_net.pt'
-        moba_agent.net.load_state_dict(torch.load(path, map_location=device))
+        if os.path.exists(path):
+            moba_agent.net.load_state_dict(torch.load(path, map_location=device))
         for step in range(0, num_steps):
             envs.render()
             states[step] = next_obs
             ds[step] = next_done
             unit_mask = np.array(envs.vec_client.getUnitLocationMasks()).reshape(num_envs, -1)
             with torch.no_grad():
-                action, log_prob, masks[step], values[step] = moba_agent.get_action(torch.Tensor(next_obs), unit_mask,
-                                                                                    envs)
+                action, log_prob, masks[step], values[step] = moba_agent.get_action(torch.Tensor(next_obs), unit_mask, envs)
                 actions[step] = action.T
                 log_probs[step] = log_prob
                 next_obs, rs, done, infos = envs.step(action.T)
