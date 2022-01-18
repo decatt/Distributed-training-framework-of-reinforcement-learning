@@ -22,9 +22,9 @@ class Master:
         self.version = version
         self.num_worker = num_worker
         self.shared_model = net
-        self.state_length = 1000
-        self.action_length = 30
-        self.action_shape = [10, 10, 10]
+        self.state_shape = (10,10,27)
+        self.action_length = 178
+        self.action_shape = [100, 6, 4, 4, 4, 4, 7, 49]
         self.batch_size = 1024
         self.num_mdps = 10
 
@@ -35,30 +35,25 @@ class Master:
         mini_batch_size = 128
 
         # get following from redis
-        states = np.ones((self.batch_size, self.num_mdps, self.state_length))
+        states = np.ones((self.batch_size, self.num_mdps, )+self.state_shape)
         actions = np.ones((self.batch_size, self.num_mdps, len(self.action_shape)))
         rewards = np.ones((self.batch_size, self.num_mdps))
         values = np.ones((self.batch_size, self.num_mdps))
         ds = np.ones((self.batch_size, self.num_mdps))
         masks = np.ones((self.batch_size, self.num_mdps, self.action_length))
         log_probs = np.ones((self.batch_size, self.num_mdps))
-        next_done = 0
-        last_value = 1
         version = 0
+
         advantages = np.zeros((self.batch_size, self.num_mdps))
 
         last_gae_lam = 0
-        for t in reversed(range(self.batch_size)):
-            if t == self.batch_size - 1:
-                next_non_terminal = 1.0 - next_done
-                next_values = last_value
-            else:
-                next_non_terminal = 1.0 - ds[t + 1]
-                next_values = values[t + 1]
+        for t in reversed(range(self.batch_size-1)):
+            next_non_terminal = 1.0 - ds[t + 1]
+            next_values = values[t + 1]
             delta = rewards[t] + gamma * next_values * next_non_terminal - values[t]
             advantages[t] = last_gae_lam = delta + gamma * gae_lambda * next_non_terminal * last_gae_lam
 
-        states = states.reshape((-1, self.state_length))
+        states = states.reshape((self.batch_size * self.num_mdps,)+self.state_shape)
         actions = actions.reshape((-1, len(self.action_shape)))
         values = values.reshape((self.batch_size * self.num_mdps,))
         masks = masks.reshape((-1, self.action_length))

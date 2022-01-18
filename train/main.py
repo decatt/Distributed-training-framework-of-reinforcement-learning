@@ -19,13 +19,16 @@ if __name__ == '__main__':
     parser.add_argument('--action-length', default=100)
     parser.add_argument('--learning-rate', default=2.5e-4, help='the learning rate of the optimizer')
     parser.add_argument('--batch-size', default=512)
+    parser.add_argument('--action-space', default=[100, 6, 4, 4, 4, 4, 7, 49])
     args = parser.parse_args()
+
     moba_net = MobaNet().share_memory()
     moba_master = master.Master(moba_net, num_worker=args.num_worker, version=0)
     workers = []
     processes = []
+
     for i in range(args.num_worker):
-        moba_agent = MobaAgent(moba_master.shared_model, [10, 10, 10])
+        moba_agent = MobaAgent(moba_master.shared_model, args.action_space)
         moba_worker = worker.Worker(
             agent=moba_agent,
             batch_size=1024,
